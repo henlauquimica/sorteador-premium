@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import random
 from names import NAMES
-from models_app import RaffleConfig, DrawResult
+from models_app import RaffleConfig, DrawResult, ThemeConfig
 from typing import List
 
 app = FastAPI()
@@ -29,6 +29,7 @@ class GameState:
         self.max_number = 100
         self.allow_repeat = False
         self.history: List[str] = []
+        self.theme: ThemeConfig = ThemeConfig()
 
 state = GameState()
 
@@ -38,6 +39,7 @@ def get_state():
         "mode": state.mode,
         "participants": state.participants,
         "history": state.history,
+        "theme": state.theme,
         "config": {
             "min_number": state.min_number,
             "max_number": state.max_number,
@@ -99,3 +101,8 @@ def reset_game():
     state.participants = state.original_participants.copy()
     state.history = []
     return {"message": "Reset successful", "participants": state.participants}
+
+@app.post("/api/theme")
+def update_theme(theme: ThemeConfig):
+    state.theme = theme
+    return {"message": "Theme updated", "theme": state.theme}
