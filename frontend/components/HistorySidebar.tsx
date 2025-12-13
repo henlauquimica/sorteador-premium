@@ -87,7 +87,11 @@ export default function HistorySidebar({
       >
         <div className="flex flex-col h-full p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2
+              className={`text-xl font-bold flex items-center gap-2 ${
+                theme.is_dark_mode ? "text-white" : "text-slate-900"
+              }`}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
@@ -98,7 +102,7 @@ export default function HistorySidebar({
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-purple-500"
+                style={{ color: theme.primary_color }}
               >
                 <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
                 <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
@@ -109,25 +113,54 @@ export default function HistorySidebar({
               </svg>
               Histórico
             </h2>
-            <button
-              onClick={onToggle}
-              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  if (confirm("Limpar histórico?")) onClear();
+                }}
+                className={`p-2 rounded-lg transition-colors ${
+                  theme.is_dark_mode
+                    ? "text-slate-400 hover:text-red-400 hover:bg-slate-800"
+                    : "text-slate-500 hover:text-red-500 hover:bg-slate-100"
+                }`}
+                title="Limpar Histórico"
               >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+              </button>
+              <button
+                onClick={onToggle}
+                className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
@@ -143,12 +176,28 @@ export default function HistorySidebar({
                   .map((winner, index) => (
                     <li
                       key={index}
-                      className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 animate-in slide-in-from-right duration-300"
+                      className={`flex items-center gap-3 p-3 rounded-lg border animate-in slide-in-from-right duration-300 ${
+                        theme.is_dark_mode
+                          ? "bg-slate-800/50 border-slate-700/50"
+                          : "bg-slate-100 border-slate-200"
+                      }`}
                     >
-                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-600/20 text-purple-400 text-xs font-bold">
+                      <span
+                        className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                        style={{
+                          backgroundColor: `${theme.primary_color}20`,
+                          color: theme.primary_color,
+                        }}
+                      >
                         {history.length - index}
                       </span>
-                      <span className="font-medium text-slate-200">
+                      <span
+                        className={`font-medium ${
+                          theme.is_dark_mode
+                            ? "text-slate-200"
+                            : "text-slate-800"
+                        }`}
+                      >
                         {winner}
                       </span>
                     </li>

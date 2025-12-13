@@ -2,13 +2,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import random
 from names import NAMES
-from models_app import RaffleConfig, DrawResult, ThemeConfig
+from models_app import RaffleConfig, ThemeConfig
 from typing import List
 
 app = FastAPI()
 
 origins = [
     "http://localhost:3000",
+    "https://sorteios.henlau.com.br",
 ]
 
 app.add_middleware(
@@ -101,6 +102,16 @@ def reset_game():
     state.participants = state.original_participants.copy()
     state.history = []
     return {"message": "Reset successful", "participants": state.participants}
+
+@app.post("/api/reset-history")
+def reset_history():
+    state.history = []
+    return {"message": "History cleared"}
+
+@app.post("/api/restore-participants")
+def restore_participants():
+    state.participants = state.original_participants.copy()
+    return {"message": "Participants restored", "count": len(state.participants)}
 
 @app.post("/api/theme")
 def update_theme(theme: ThemeConfig):

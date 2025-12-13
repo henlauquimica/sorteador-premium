@@ -60,19 +60,16 @@ export default function ConfigModal({
     currentTheme?.is_dark_mode !== undefined ? currentTheme.is_dark_mode : true
   );
 
-  // Sync state when currentTheme changes (important for external toggle)
+  // Sync state when modal opens
   useEffect(() => {
-    if (currentTheme) {
+    if (isOpen && currentTheme) {
       setIsDarkMode(currentTheme.is_dark_mode);
-      // Only override colors if they match the defaults/theme,
-      // effectively we just want to ensure the toggle is in sync.
-      // But for full sync, let's update all.
       setAppName(currentTheme.app_name);
       setPrimaryColor(currentTheme.primary_color);
       setSecondaryColor(currentTheme.secondary_color);
       setEffectColor(currentTheme.effect_color);
     }
-  }, [currentTheme]);
+  }, [isOpen]); // Only run on open, not when currentTheme changes (avoids loop with preview)
 
   // Live Preview Effect
   useEffect(() => {
@@ -174,42 +171,29 @@ export default function ConfigModal({
               isDarkMode ? "bg-slate-800" : "bg-slate-100"
             }`}
           >
-            <button
-              onClick={() => handleTabChange("names")}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                activeTab === "names"
-                  ? "bg-purple-600 text-white shadow-lg"
-                  : isDarkMode
-                  ? "text-slate-400 hover:text-white"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              Nomes
-            </button>
-            <button
-              onClick={() => handleTabChange("numbers")}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                activeTab === "numbers"
-                  ? "bg-purple-600 text-white shadow-lg"
-                  : isDarkMode
-                  ? "text-slate-400 hover:text-white"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              Números
-            </button>
-            <button
-              onClick={() => handleTabChange("theme")}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                activeTab === "theme"
-                  ? "bg-purple-600 text-white shadow-lg"
-                  : isDarkMode
-                  ? "text-slate-400 hover:text-white"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              Personalizar
-            </button>
+            {["names", "numbers", "theme"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab as any)}
+                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                  activeTab === tab
+                    ? "text-white shadow-lg"
+                    : isDarkMode
+                    ? "text-slate-400 hover:text-white"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+                style={{
+                  backgroundColor:
+                    activeTab === tab ? primaryColor : "transparent",
+                }}
+              >
+                {tab === "names"
+                  ? "Nomes"
+                  : tab === "numbers"
+                  ? "Números"
+                  : "Personalizar"}
+              </button>
+            ))}
           </div>
 
           {/* Content */}
@@ -233,8 +217,11 @@ export default function ConfigModal({
                   <button
                     onClick={() => setIsDarkMode(!isDarkMode)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                      isDarkMode ? "bg-purple-600" : "bg-slate-400"
+                      !isDarkMode ? "bg-slate-400" : ""
                     }`}
+                    style={{
+                      backgroundColor: isDarkMode ? primaryColor : undefined,
+                    }}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -409,8 +396,11 @@ export default function ConfigModal({
               <button
                 onClick={() => setAllowRepeat(!allowRepeat)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                  allowRepeat ? "bg-purple-600" : "bg-slate-400"
+                  !allowRepeat ? "bg-slate-400" : ""
                 }`}
+                style={{
+                  backgroundColor: allowRepeat ? primaryColor : undefined,
+                }}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -442,7 +432,11 @@ export default function ConfigModal({
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg text-white font-medium hover:opacity-90 transition-opacity shadow-lg shadow-purple-500/20"
+            className="px-6 py-2 rounded-lg text-white font-medium hover:opacity-90 transition-opacity shadow-lg"
+            style={{
+              backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`,
+              boxShadow: `0 10px 15px -3px ${primaryColor}40`,
+            }}
           >
             Salvar Configuração
           </button>

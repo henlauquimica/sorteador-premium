@@ -16,7 +16,7 @@ type ThemeConfig = {
   app_name: string;
   primary_color: string;
   secondary_color: string;
-  secondary_color: string;
+
   effect_color: string;
   is_dark_mode: boolean;
 };
@@ -42,7 +42,7 @@ export default function Home() {
   const [backupTheme, setBackupTheme] = useState<ThemeConfig | null>(null);
 
   const fetchState = () => {
-    fetch("http://127.0.0.1:8000/api/state")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/state`)
       .then((res) => res.json())
       .then((data) => {
         setParticipants(data.participants);
@@ -90,7 +90,7 @@ export default function Home() {
 
   const fetchWinner = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/draw", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/draw`, {
         method: "GET",
       });
 
@@ -131,7 +131,7 @@ export default function Home() {
     const newTheme = { ...theme, is_dark_mode: !theme.is_dark_mode };
     setTheme(newTheme);
     // Auto-save preference
-    fetch("http://127.0.0.1:8000/api/theme", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/theme`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newTheme),
@@ -141,18 +141,24 @@ export default function Home() {
   const handleSaveConfig = async (config: Config, newTheme: ThemeConfig) => {
     try {
       // Save Config
-      const resConfig = await fetch("http://127.0.0.1:8000/api/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      });
+      const resConfig = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/config`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(config),
+        }
+      );
 
       // Save Theme
-      const resTheme = await fetch("http://127.0.0.1:8000/api/theme", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newTheme),
-      });
+      const resTheme = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/theme`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newTheme),
+        }
+      );
 
       if (resConfig.ok && resTheme.ok) {
         setWinner(null);
@@ -161,6 +167,43 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Failed to save settings", err);
+    }
+  };
+
+  const handleRestoreParticipants = async () => {
+    if (
+      !confirm(
+        "Deseja restaurar a lista de participantes original? O histórico será mantido."
+      )
+    )
+      return;
+    try {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/restore-participants`,
+        { method: "POST" }
+      );
+      fetchState();
+      setWinner(null);
+      setDisplayedWinner("");
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleResetHistory = async () => {
+    if (
+      !confirm(
+        "Deseja limpar o histórico? A lista de participantes atual será mantida."
+      )
+    )
+      return;
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reset-history`, {
+        method: "POST",
+      });
+      fetchState();
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -255,6 +298,65 @@ export default function Home() {
           )}
         </button>
 
+        {/* Restore Participants Button */}
+        <button
+          onClick={handleRestoreParticipants}
+          className={`p-3 rounded-full border transition-all 
+            ${
+              theme.is_dark_mode
+                ? "bg-slate-800/50 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700/50"
+                : "bg-white/50 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-white shadow-sm"
+            }`}
+          title="Restaurar Lista de Participantes"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+            <path d="M16 16h5v5" />
+          </svg>
+        </button>
+
+        {/* Reset History Button */}
+        <button
+          onClick={handleResetHistory}
+          className={`p-3 rounded-full border transition-all 
+            ${
+              theme.is_dark_mode
+                ? "bg-slate-800/50 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700/50"
+                : "bg-white/50 border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-white shadow-sm"
+            }`}
+          title="Reiniciar Histórico (Manter Lista)"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 6h18" />
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            <line x1="10" x2="10" y1="11" y2="17" />
+            <line x1="14" x2="14" y1="11" y2="17" />
+          </svg>
+        </button>
+
         {/* Config Button */}
         <button
           onClick={() => {
@@ -303,7 +405,7 @@ export default function Home() {
 
       <HistorySidebar
         history={history}
-        onClear={() => {}}
+        onClear={handleResetHistory}
         isOpen={isHistoryOpen}
         onToggle={() => setIsHistoryOpen(!isHistoryOpen)}
         theme={theme}
@@ -410,7 +512,7 @@ export default function Home() {
                 className={`p-3 rounded-lg text-center text-sm font-medium transition-all duration-300 border relative overflow-hidden
                   ${
                     name === winner && name !== removingWinner
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 border-purple-400 scale-110 shadow-[0_0_30px_rgba(168,85,247,0.5)] text-white z-20 ring-2 ring-white/50 animate-pulse"
+                      ? "text-white z-20 ring-2 ring-white/50 animate-pulse"
                       : ""
                   }
                   ${
@@ -425,6 +527,20 @@ export default function Home() {
                         : "bg-white/60 border-slate-200 text-slate-700 hover:bg-white hover:text-slate-900 hover:scale-105 shadow-sm"
                       : ""
                   }`}
+                style={{
+                  backgroundImage:
+                    name === winner && name !== removingWinner
+                      ? `linear-gradient(to right, ${theme.primary_color}, ${theme.secondary_color})`
+                      : undefined,
+                  borderColor:
+                    name === winner && name !== removingWinner
+                      ? theme.primary_color
+                      : undefined,
+                  boxShadow:
+                    name === winner && name !== removingWinner
+                      ? `0 0 30px ${theme.primary_color}80`
+                      : undefined,
+                }}
               >
                 <span className="block truncate">{name}</span>
               </div>
