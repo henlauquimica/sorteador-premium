@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, CSSProperties } from "react";
 import ConfigModal from "@/components/ConfigModal";
 import HistorySidebar from "@/components/HistorySidebar";
 
@@ -27,6 +27,8 @@ export default function Home() {
   const [winner, setWinner] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [displayedWinner, setDisplayedWinner] = useState<string>("");
+  const [mode, setMode] = useState<"names" | "numbers">("names");
+  const [doubleDraw, setDoubleDraw] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [removingWinner, setRemovingWinner] = useState<string | null>(null);
@@ -46,6 +48,11 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         setParticipants(data.participants);
+        setParticipants(data.participants);
+        setMode(data.mode);
+        if (data.config && data.config.double_draw !== undefined) {
+          setDoubleDraw(data.config.double_draw);
+        }
         if (data.history) setHistory(data.history);
         // Ensure we don't accidentally revert if the backend is lagging or invalid?
         // But backend should be truth.
@@ -114,6 +121,7 @@ export default function Home() {
       // 3. Wait for animation to finish (500ms)
       await new Promise((r) => setTimeout(r, 600)); // slightly longer than css transition
 
+      // 4. Update state (actually removes item if server-side repeat is off)
       // 4. Update state (actually removes item if server-side repeat is off)
       fetchState();
 
@@ -225,7 +233,7 @@ export default function Home() {
             : "rgba(203, 213, 225, 0.5)",
           "--scrollbar-thumb": theme.primary_color + "80", // 50% opacity
           "--scrollbar-thumb-hover": theme.primary_color,
-        } as any
+        } as CSSProperties
       }
     >
       {/* Background decoration */}
@@ -409,6 +417,7 @@ export default function Home() {
         isOpen={isHistoryOpen}
         onToggle={() => setIsHistoryOpen(!isHistoryOpen)}
         theme={theme}
+        doubleDraw={doubleDraw}
       />
 
       <div
@@ -496,7 +505,8 @@ export default function Home() {
                 theme.is_dark_mode ? "text-slate-400" : "text-slate-600"
               }`}
             >
-              Participantes ({participants.length})
+              {mode === "names" ? "Participantes" : "Números"} (
+              {participants.length})
             </h3>
             <div
               className={`h-px flex-1 ml-4 ${

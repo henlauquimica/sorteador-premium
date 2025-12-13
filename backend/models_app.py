@@ -7,6 +7,7 @@ class RaffleConfig(BaseModel):
     min_number: Optional[int] = 1
     max_number: Optional[int] = 100
     allow_repeat: bool = False
+    double_draw: bool = False
     
 class DrawResult(BaseModel):
     winner: str

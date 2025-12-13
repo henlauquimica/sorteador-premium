@@ -18,6 +18,7 @@ interface HistorySidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   theme: ThemeConfig;
+  doubleDraw?: boolean;
 }
 
 export default function HistorySidebar({
@@ -26,8 +27,127 @@ export default function HistorySidebar({
   isOpen,
   onToggle,
   theme,
+  doubleDraw,
 }: HistorySidebarProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  // Helper to group history items if DoubleDraw is active
+  const renderHistoryItems = () => {
+    if (history.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-40 text-slate-500">
+          <span className="text-sm">Nenhum sorteio realizado</span>
+        </div>
+      );
+    }
+
+    let itemsToRender: React.ReactNode[] = [];
+
+    // If double draw, we pair items: [Name, Number, Name, Number...]
+    // We assume the sequence starts with Name.
+    // Group (i, i+1)
+    if (doubleDraw) {
+      const pairs = [];
+      for (let i = 0; i < history.length; i += 2) {
+        const name = history[i];
+        const number = history[i + 1]; // might be undefined if just drawn name
+        pairs.push({ name, number, index: i });
+      }
+
+      // Reverse pairs to show newest first
+      itemsToRender = pairs.reverse().map((pair, idx) => {
+        // Human readable index: (Total Pairs - idx)
+        const displayIndex = pairs.length - idx;
+
+        return (
+          <li
+            key={pair.index}
+            className={`flex flex-col p-3 rounded-lg border animate-in slide-in-from-right duration-300 ${
+              theme.is_dark_mode
+                ? "bg-slate-800/50 border-slate-700/50"
+                : "bg-slate-100 border-slate-200"
+            }`}
+          >
+            {/* Header: Index + Name */}
+            <div className="flex items-center gap-3 mb-2">
+              <span
+                className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0"
+                style={{
+                  backgroundColor: `${theme.primary_color}20`,
+                  color: theme.primary_color,
+                }}
+              >
+                {displayIndex}
+              </span>
+              <span
+                className={`font-medium truncate ${
+                  theme.is_dark_mode ? "text-slate-200" : "text-slate-800"
+                }`}
+              >
+                {pair.name}
+              </span>
+            </div>
+
+            {/* Number Badge (if present) */}
+            {pair.number && (
+              <div className="flex items-center gap-2 pl-9">
+                <span
+                  className={`text-xs ${
+                    theme.is_dark_mode ? "text-slate-400" : "text-slate-500"
+                  }`}
+                >
+                  Número:
+                </span>
+                <span
+                  className="px-2 py-0.5 rounded text-sm font-bold"
+                  style={{
+                    backgroundColor: theme.secondary_color + "20",
+                    color: theme.secondary_color,
+                  }}
+                >
+                  {pair.number}
+                </span>
+              </div>
+            )}
+          </li>
+        );
+      });
+    } else {
+      // Standard Rendering
+      itemsToRender = history
+        .slice()
+        .reverse()
+        .map((winner, index) => (
+          <li
+            key={index}
+            className={`flex items-center gap-3 p-3 rounded-lg border animate-in slide-in-from-right duration-300 ${
+              theme.is_dark_mode
+                ? "bg-slate-800/50 border-slate-700/50"
+                : "bg-slate-100 border-slate-200"
+            }`}
+          >
+            <span
+              className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+              style={{
+                backgroundColor: `${theme.primary_color}20`,
+                color: theme.primary_color,
+              }}
+            >
+              {history.length - index}
+            </span>
+            <span
+              className={`font-medium ${
+                theme.is_dark_mode ? "text-slate-200" : "text-slate-800"
+              }`}
+            >
+              {winner}
+            </span>
+          </li>
+        ));
+    }
+
+    return <ul className="space-y-3">{itemsToRender}</ul>;
+  };
 
   return (
     <>
@@ -164,46 +284,7 @@ export default function HistorySidebar({
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-            {history.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-slate-500">
-                <span className="text-sm">Nenhum sorteio realizado</span>
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {history
-                  .slice()
-                  .reverse()
-                  .map((winner, index) => (
-                    <li
-                      key={index}
-                      className={`flex items-center gap-3 p-3 rounded-lg border animate-in slide-in-from-right duration-300 ${
-                        theme.is_dark_mode
-                          ? "bg-slate-800/50 border-slate-700/50"
-                          : "bg-slate-100 border-slate-200"
-                      }`}
-                    >
-                      <span
-                        className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
-                        style={{
-                          backgroundColor: `${theme.primary_color}20`,
-                          color: theme.primary_color,
-                        }}
-                      >
-                        {history.length - index}
-                      </span>
-                      <span
-                        className={`font-medium ${
-                          theme.is_dark_mode
-                            ? "text-slate-200"
-                            : "text-slate-800"
-                        }`}
-                      >
-                        {winner}
-                      </span>
-                    </li>
-                  ))}
-              </ul>
-            )}
+            {renderHistoryItems()}
           </div>
         </div>
       </div>

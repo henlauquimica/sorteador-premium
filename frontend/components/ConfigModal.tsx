@@ -8,6 +8,7 @@ type Config = {
   min_number: number;
   max_number: number;
   allow_repeat: boolean;
+  double_draw?: boolean;
 };
 
 type ThemeConfig = {
@@ -27,23 +28,37 @@ interface ConfigModalProps {
   currentTheme?: ThemeConfig;
 }
 
-export default function ConfigModal({
-  isOpen,
+export default function ConfigModal(props: ConfigModalProps) {
+  if (!props.isOpen) return null;
+  return <ConfigModalContent {...props} />;
+}
+
+function ConfigModalContent({
   onClose,
   onSave,
   onPreview,
   currentConfig,
   currentTheme,
 }: ConfigModalProps) {
+  // Initialize state from currentConfig and currentTheme
   const [activeTab, setActiveTab] = useState<"names" | "numbers" | "theme">(
-    "names"
+    currentConfig?.mode === "numbers" ? "numbers" : "names"
   );
-  const [namesText, setNamesText] = useState("");
-  const [minNum, setMinNum] = useState(1);
-  const [maxNum, setMaxNum] = useState(100);
-  const [allowRepeat, setAllowRepeat] = useState(false);
 
-  // Theme State default values if not provided
+  const [namesText, setNamesText] = useState(
+    currentConfig?.participants?.join("\n") || ""
+  );
+
+  const [minNum, setMinNum] = useState(currentConfig?.min_number ?? 1);
+  const [maxNum, setMaxNum] = useState(currentConfig?.max_number ?? 100);
+  const [allowRepeat, setAllowRepeat] = useState(
+    currentConfig?.allow_repeat ?? false
+  );
+  const [doubleDraw, setDoubleDraw] = useState(
+    currentConfig?.double_draw ?? false
+  );
+
+  // Theme State initialized from currentTheme
   const [appName, setAppName] = useState(
     currentTheme?.app_name || "Sorteador Premium"
   );
@@ -60,20 +75,10 @@ export default function ConfigModal({
     currentTheme?.is_dark_mode !== undefined ? currentTheme.is_dark_mode : true
   );
 
-  // Sync state when modal opens
-  useEffect(() => {
-    if (isOpen && currentTheme) {
-      setIsDarkMode(currentTheme.is_dark_mode);
-      setAppName(currentTheme.app_name);
-      setPrimaryColor(currentTheme.primary_color);
-      setSecondaryColor(currentTheme.secondary_color);
-      setEffectColor(currentTheme.effect_color);
-    }
-  }, [isOpen]); // Only run on open, not when currentTheme changes (avoids loop with preview)
-
   // Live Preview Effect
+  // We run this when local theme state changes to update the live preview (if available)
   useEffect(() => {
-    if (onPreview && isOpen) {
+    if (onPreview) {
       onPreview({
         app_name: appName,
         primary_color: primaryColor,
@@ -89,10 +94,7 @@ export default function ConfigModal({
     effectColor,
     isDarkMode,
     onPreview,
-    isOpen,
   ]);
-
-  if (!isOpen) return null;
 
   const handleTabChange = (tab: "names" | "numbers" | "theme") => {
     setActiveTab(tab);
@@ -100,38 +102,27 @@ export default function ConfigModal({
 
   const handleSave = () => {
     let participants: string[] = [];
-    // Only update participants if we are in "names" mode
-    if (activeTab === "names") {
-      participants = namesText
-        .split(/[\n,]+/)
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
+    // If we are in "names" mode, or if we have edited names, parse them.
+    // If activeTab is NOT names, we still might want to preserve the names logic
+    // if we haven't touched them, but here we can just rely on namesText which is initialized.
 
-    // Prepare config object. If activeTab is 'theme', we shouldn't change the game mode
-    // strictly speaking unless we track 'gameMode' separately.
-    // For now, let's assume if we are editing theme, we don't change mode,
-    // OR we default to "names" if on theme tab?
-    // Better: We should probably track 'activeGameMode' and 'activeTab' separately.
-    // But given the constraints, let's just assume if activeTab is 'theme', we keep the current config mode?
-    // However, the `Config` type requires 'mode'.
-    // Let's pass the current props config mode if local activeTab is 'theme'.
+    participants = namesText
+      .split(/[\n,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-    // Simplification for this fix: If activeTab is theme, assume "names" or keep previous?
-    // Let's rely on a derived mode.
+    // Determine mode validation
     const modeToSave =
       activeTab === "theme" ? currentConfig?.mode || "names" : activeTab;
 
     onSave(
       {
         mode: modeToSave,
-        participants:
-          activeTab === "names"
-            ? participants
-            : currentConfig?.participants || [],
+        participants: participants,
         min_number: minNum,
         max_number: maxNum,
         allow_repeat: allowRepeat,
+        double_draw: doubleDraw,
       },
       {
         app_name: appName,
@@ -141,8 +132,6 @@ export default function ConfigModal({
         is_dark_mode: isDarkMode,
       }
     );
-
-    // Don't close here, let parent handle it to avoid revert race condition
   };
 
   return (
@@ -171,10 +160,10 @@ export default function ConfigModal({
               isDarkMode ? "bg-slate-800" : "bg-slate-100"
             }`}
           >
-            {["names", "numbers", "theme"].map((tab) => (
+            {(["names", "numbers", "theme"] as const).map((tab) => (
               <button
                 key={tab}
-                onClick={() => handleTabChange(tab as any)}
+                onClick={() => handleTabChange(tab)}
                 className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                   activeTab === tab
                     ? "text-white shadow-lg"
@@ -368,6 +357,47 @@ export default function ConfigModal({
                 </div>
               </div>
             )}
+
+            {/* Double Draw Toggle */}
+            <div
+              className={`flex items-center justify-between p-4 rounded-xl border mb-4 ${
+                isDarkMode
+                  ? "bg-slate-800 border-slate-700"
+                  : "bg-slate-100 border-slate-200"
+              }`}
+            >
+              <div className="flex flex-col">
+                <span
+                  className={`text-sm font-medium ${
+                    isDarkMode ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  Sorteio Duplo (Alternado)
+                </span>
+                <span
+                  className={`text-xs ${
+                    isDarkMode ? "text-slate-400" : "text-slate-500"
+                  }`}
+                >
+                  Alterna entre sortear Nomes e Números automaticamente
+                </span>
+              </div>
+              <button
+                onClick={() => setDoubleDraw(!doubleDraw)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                  !doubleDraw ? "bg-slate-400" : ""
+                }`}
+                style={{
+                  backgroundColor: doubleDraw ? primaryColor : undefined,
+                }}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    doubleDraw ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
 
             {/* Repeat Toggle */}
             <div
